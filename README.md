@@ -1,2 +1,3 @@
 # OptionSmile
-Modelling equity option volatility smile
+
+Modelling equity option volatility smile.

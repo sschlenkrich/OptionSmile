@@ -1,0 +1,9 @@
+# Do not commit files from this folder unless explicitly added.
+
+.dolt/
+.doltcfg/
+config.yaml
+
+options/
+rates/
+stocks/

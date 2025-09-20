@@ -1,0 +1,19 @@
+# Create environment via
+# conda env create -f environment.yml
+name: option-smile
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - ipykernel
+  - jupyter
+  - python
+  - matplotlib
+  - numpy
+  - openpyxl
+  - pandas
+  - plotly
+  - pymysql
+  - QuantLib-Python
+  - scipy
+  - tqdm
