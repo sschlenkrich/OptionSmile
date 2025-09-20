@@ -46,6 +46,35 @@ def spot_price(symbol, date):
     return df
 
 
+def dividends(symbol, date, maximum=None):
+    if type(date) != str:
+        date = date.isoformat()
+    q = \
+    '''
+    select a.act_symbol, a.date, b.ex_date, b.amount
+    from ohlcv a inner join dividend b on a.act_symbol = b.act_symbol
+    where a.act_symbol = '%s'
+    and a.date = '%s'
+    and b.ex_date > a.date
+    ''' % (symbol, date)
+    limit_clause = ""
+    max_date_clause = ""
+    if maximum is not None:
+        if type(maximum) == int:
+            limit_clause = " limit %d" % maximum
+        else:
+            if type(maximum) != str:
+                date_str = maximum.isoformat()
+            else:
+                date_str = maximum
+            max_date_clause = " and b.ex_date <= '%s'" % date_str
+    q = q + max_date_clause
+    q = q + " order by ex_date"
+    q = q + limit_clause
+    df = pd.read_sql(q, __STOCKS__)
+    return df
+
+
 def smile_expiries(symbol, date):
     q = "select distinct(expiration) as expiration from option_chain where act_symbol='%s' and date='%s'" % (symbol, date)
     df = pd.read_sql(q, __OPTIONS__)
