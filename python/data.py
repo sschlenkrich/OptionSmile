@@ -51,12 +51,11 @@ def dividends(symbol, date, maximum=None):
         date = date.isoformat()
     q = \
     '''
-    select a.act_symbol, a.date, b.ex_date, b.amount
-    from ohlcv a inner join dividend b on a.act_symbol = b.act_symbol
-    where a.act_symbol = '%s'
-    and a.date = '%s'
-    and b.ex_date > a.date
-    ''' % (symbol, date)
+    select act_symbol, Date('%s') as date, ex_date, amount
+    from dividend
+    where act_symbol = '%s'
+    and ex_date > '%s'
+    ''' % (date, symbol, date)
     limit_clause = ""
     max_date_clause = ""
     if maximum is not None:
@@ -67,7 +66,7 @@ def dividends(symbol, date, maximum=None):
                 date_str = maximum.isoformat()
             else:
                 date_str = maximum
-            max_date_clause = " and b.ex_date <= '%s'" % date_str
+            max_date_clause = " and ex_date <= '%s'" % date_str
     q = q + max_date_clause
     q = q + " order by ex_date"
     q = q + limit_clause
