@@ -1,4 +1,5 @@
 
+import datetime
 import QuantLib as ql
 
 def ql_date(date):
@@ -15,6 +16,9 @@ def iso_date(date):
         return date.ISO()
     #
     return date.isoformat()
+
+def dt_date(date):
+    return datetime.date.fromisoformat(iso_date(date))
 
 def months(period):
     if type(period) != ql.Period:
