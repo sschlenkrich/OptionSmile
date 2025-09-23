@@ -1,4 +1,5 @@
 
+import numpy as np
 import QuantLib as ql
 
 from dateutils import ql_date
@@ -47,8 +48,12 @@ def implied_volatilities(
         ql.VanillaOption(ql.PlainVanillaPayoff(call_put, strike), exercise)
         for strike in strike_prices
     ]
-    implied_vols = [
-        option.impliedVolatility(option_price, process, dividend_schedule)
-        for option, option_price in zip(options, option_prices)
-    ]
-    return implied_vols
+    implied_vols = []
+    for option, option_price in zip(options, option_prices):
+        try:
+            v = option.impliedVolatility(option_price, process, dividend_schedule)
+        except:
+            v = np.nan
+        implied_vols.append(v)
+    #
+    return np.array(implied_vols)
