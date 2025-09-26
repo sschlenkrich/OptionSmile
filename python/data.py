@@ -114,3 +114,15 @@ def smile_prices(symbol, date, expiry_date = None, values = ['bid', 'ask']):
     )
     df = pd.pivot_table(df, values='data_value', index=index + ['data_name'], columns=columns)
     return df
+
+
+def store_table(table, conn, table_name):
+    sql = ("REPLACE INTO %s (" % table_name) + ", ".join(table.columns) + ") VALUES "
+    for _, row in table.iterrows():
+        line = str(tuple(row)) + ", "
+        sql = sql + line
+    sql = sql[:-2] + ";"
+    #
+    with conn.cursor() as curs:
+        curs.execute(sql)
+    conn.commit()
