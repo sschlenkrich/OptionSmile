@@ -7,7 +7,7 @@ from dateutils import iso_date
 from smiledata import smile_data
 
 
-def atm_data(data):
+def _atm_data(data):
     vols = []
     for forward_price, option_volatilities in zip(data['forward_prices'], data['option_volatilities']):
         tmp = option_volatilities[option_volatilities['data_name']=='mid'].dropna(axis=1)
@@ -24,17 +24,16 @@ def atm_data(data):
     return dates, strikes, vols
 
 
-def smile_volatilities(data, call_put, data_name):
-    return np.array(data[
-        (data['call_put']==call_put) &(data['data_name']==data_name)
+def _smile_volatilities(data, data_name):
+    return np.array(data[data['data_name']==data_name
         ].drop(['call_put', 'data_name'], axis=1).iloc[0])
 
 
-def smile_plot(symbol, date, overlapp_idx = 3):
+def smile_plot(symbol, date, overlapp_idx = 3, without_nan=True):
     data = smile_data(symbol, date)
     traces = []
     #
-    atm_expiries, atm_strikes, atm_vols = atm_data(data)
+    atm_expiries, atm_strikes, atm_vols = _atm_data(data)
     trace = go.Scatter3d(
         x=atm_expiries, y=atm_strikes, z=atm_vols,
             name='ATM',
@@ -45,26 +44,37 @@ def smile_plot(symbol, date, overlapp_idx = 3):
     #
     overlapp_idx = 3  # how much overlapp for C/P
     for expiry_date, forward_price, option_volatilities in zip(data['expiry_dates'], data['forward_prices'], data['option_volatilities']):
-        strikes = np.array(option_volatilities.columns[2:])
-        expiries = np.array([expiry_date] * len(strikes))
-        atm_idx = np.searchsorted(strikes, forward_price)
-        c_idx = max(atm_idx-overlapp_idx, 0)
-        p_idx = min(atm_idx+overlapp_idx, len(strikes))
         #
-        c_vols_mid = smile_volatilities(option_volatilities, 'Call', 'mid')
-        c_vols_bid = smile_volatilities(option_volatilities, 'Call', 'bid')
-        c_vols_ask = smile_volatilities(option_volatilities, 'Call', 'ask')
+        c_vols = option_volatilities[option_volatilities['call_put']=='Call']
+        p_vols = option_volatilities[option_volatilities['call_put']=='Put']
+        if without_nan:
+            c_vols = c_vols.dropna(axis=1)
+            p_vols = p_vols.dropna(axis=1)
+        #
+        c_strikes = np.array(c_vols.columns[2:])
+        p_strikes = np.array(p_vols.columns[2:])
+        atm_idx_c = np.searchsorted(c_strikes, forward_price)
+        atm_idx_p = np.searchsorted(p_strikes, forward_price)
+        c_idx = max(atm_idx_c - overlapp_idx, 0)
+        p_idx = min(atm_idx_p + overlapp_idx, len(p_strikes))
+        #
+        c_expiries = np.array([expiry_date] * len(c_strikes))
+        p_expiries = np.array([expiry_date] * len(p_strikes))
+        #
+        c_vols_mid = _smile_volatilities(c_vols, 'mid')
+        c_vols_bid = _smile_volatilities(c_vols, 'bid')
+        c_vols_ask = _smile_volatilities(c_vols, 'ask')
         c_vols_up = c_vols_ask - c_vols_mid
         c_vols_do = c_vols_mid - c_vols_bid
         #
-        p_vols_mid = smile_volatilities(option_volatilities, 'Put', 'mid')
-        p_vols_bid = smile_volatilities(option_volatilities, 'Put', 'bid')
-        p_vols_ask = smile_volatilities(option_volatilities, 'Put', 'ask')
+        p_vols_mid = _smile_volatilities(p_vols, 'mid')
+        p_vols_bid = _smile_volatilities(p_vols, 'bid')
+        p_vols_ask = _smile_volatilities(p_vols, 'ask')
         p_vols_up = p_vols_ask - p_vols_mid
         p_vols_do = p_vols_mid - p_vols_bid
         #
         trace = go.Scatter3d(
-            x=expiries[c_idx:], y=strikes[c_idx:], z=c_vols_mid[c_idx:],
+            x=c_expiries[c_idx:], y=c_strikes[c_idx:], z=c_vols_mid[c_idx:],
             name='C ' + iso_date(expiry_date),
             line=dict( color='red', width=1 ),
             marker=dict( size=2, color='red' ),
@@ -76,7 +86,7 @@ def smile_plot(symbol, date, overlapp_idx = 3):
         traces.append(trace)
         #
         trace = go.Scatter3d(
-            x=expiries[:p_idx], y=strikes[:p_idx], z=p_vols_mid[:p_idx],
+            x=p_expiries[:p_idx], y=p_strikes[:p_idx], z=p_vols_mid[:p_idx],
             name='P ' + iso_date(expiry_date),
             line=dict( color='blue', width=1 ),
             marker=dict( size=2, color='blue' ),
