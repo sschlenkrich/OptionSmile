@@ -8,19 +8,48 @@ from smiledata import smile_data
 
 
 def _atm_data(data):
+    dates = []
+    strikes = []
     vols = []
-    for forward_price, option_volatilities in zip(data['forward_prices'], data['option_volatilities']):
-        tmp = option_volatilities[option_volatilities['data_name']=='mid'].dropna(axis=1)
-        strikes = tmp.columns[2:]
-        c_vols = np.array(tmp[tmp['call_put']=='Call'].drop(['call_put', 'data_name'], axis=1).iloc[0])
-        p_vols = np.array(tmp[tmp['call_put']=='Put'].drop(['call_put', 'data_name'], axis=1).iloc[0])    
-        atm_vol_c = np.interp(forward_price, strikes, c_vols)
-        atm_vol_p = np.interp(forward_price, strikes, p_vols)
-        vols.append(float(0.5*(atm_vol_c + atm_vol_p)))
+    for expiry_date, forward_price, option_volatilities in \
+        zip(data['expiry_dates'], data['forward_prices'], data['option_volatilities']):
+        #
+        v_mid = option_volatilities[option_volatilities['data_name']=='mid']
+        count = 0
+        atm_vol = 0
+        try:
+            c_vols = v_mid[v_mid['call_put']=='Call']\
+                .drop(['call_put', 'data_name'], axis=1)\
+                .dropna(axis=1)
+            c_strikes = np.array([ float(s) for s in c_vols.columns])
+            atm_vol_c = np.interp(forward_price, c_strikes, c_vols.iloc[0])
+            atm_vol += atm_vol_c
+            count += 1
+        except:
+            atm_vol_c = None
+        try:
+            p_vols = v_mid[v_mid['call_put']=='Put']\
+                .drop(['call_put', 'data_name'], axis=1)\
+                .dropna(axis=1)
+            p_strikes = np.array([ float(s) for s in p_vols.columns])
+            atm_vol_p = np.interp(forward_price, p_strikes, p_vols.iloc[0])
+            atm_vol += atm_vol_p
+            count += 1
+        except:
+            atm_vol_p = None
+        #
+        if (atm_vol_c is None) and (atm_vol_p is None):
+            # we cannot do anything
+            continue
+        atm_vol = atm_vol / count
+        dates.append(expiry_date)
+        strikes.append(forward_price)
+        vols.append(float(atm_vol))
     #
-    dates = [ data['date'] ] + list(data['expiry_dates'])
-    strikes = [ data['spot_price'] ] + data['forward_prices']
-    vols = [ vols[0] ] + vols
+    if len(dates) > 0:  # extrapolate to spot
+        dates = [ data['date'] ] + dates
+        strikes = [ data['spot_price'] ] + strikes
+        vols = [ vols[0] ] + vols
     return dates, strikes, vols
 
 
