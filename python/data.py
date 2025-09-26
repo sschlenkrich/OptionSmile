@@ -5,6 +5,7 @@ import pymysql
 __RATES__ = None
 __STOCKS__ = None
 __OPTIONS__ = None
+__VOLATILITIES__ = None
 
 def connection(db_name):
     return pymysql.connect(
@@ -19,10 +20,17 @@ def initialise():
     global __RATES__
     global __STOCKS__
     global __OPTIONS__
+    global __VOLATILITIES__
     __RATES__ = connection("rates")
     __STOCKS__ = connection("stocks")
     __OPTIONS__ = connection("options")
-    return (__RATES__, __STOCKS__, __OPTIONS__)
+    __VOLATILITIES__ = connection("volatilities")
+    return {
+        "rates" : __RATES__,
+        "stocks" : __STOCKS__,
+        "options" : __OPTIONS__,
+        "volatilities" : __VOLATILITIES__,
+    }
 
 
 def interest_rates(date):
