@@ -1,10 +1,12 @@
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
 import data
 
-from dateutils import dt_date
+from dateutils import dt_date, iso_date, ql_date
 from yieldcurve import yield_curve
 from forward import implied_forward_from_smile
 from volatilities import implied_volatilities
@@ -35,15 +37,33 @@ def smile_data(symbol, date):
         # implied forward
         c_mid = np.array(mid_prices[mid_prices['call_put']=='Call'].drop(['data_name', 'call_put'], axis=1).iloc[0])
         p_mid = np.array(mid_prices[mid_prices['call_put']=='Put'].drop(['data_name', 'call_put'], axis=1).iloc[0])
-        forward_price, div_yield = implied_forward_from_smile(
-            date, spot_price, disc_ytsh, dividend_ex_dates, dividend_amounts, expiry_date, strikes, c_mid, p_mid
-        )
+        # we aim for a robust strategy for estimate forward prices
+        forward_price = None
+        div_yield = None
+        for div_rate_min, div_rate_max in [(-0.05, 0.05), (-0.25, 0.25)]:
+            try:
+                forward_price, div_yield = implied_forward_from_smile(
+                    date, spot_price, disc_ytsh, dividend_ex_dates, dividend_amounts, expiry_date, strikes,
+                    c_mid, p_mid, div_rate_min, div_rate_max)
+                break  # exit loop if successful
+            except:
+                warnings.warn("" \
+                    "Warning. Cannot calculate forward price for " + symbol + \
+                    ", date " + iso_date(date) + \
+                    ", expiry " + iso_date(expiry_date) + \
+                    ", div-yield range " + str((div_rate_min, div_rate_max)) + "."
+                )
+        #
+        if forward_price is None:
+            forward_price = spot_price / disc_ytsh.discount(ql_date(expiry_date))
+        if div_yield is None:
+            div_yield = 0.0
+        #
         forward_prices.append(forward_price)
         dividend_yields.append(div_yield)
         # implied volatilities
         option_vols = []
         for _, row in prices.iterrows():
-            data_name = row['data_name']
             cp = 1 if row['call_put']=='Call' else -1
             prices = np.array(row[strikes])
             vols = implied_volatilities(
