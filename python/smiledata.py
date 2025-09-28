@@ -90,3 +90,49 @@ def smile_data(symbol, date):
         dividend_yields = dividend_yields,
         option_volatilities = option_volatilities,
     )
+
+
+def store_smile_data(symbol, date):
+    dict = smile_data(symbol, date)
+    #
+    table = pd.DataFrame()
+    table['expiration'] = dict['expiry_dates']
+    table['price'] = dict['forward_prices']
+    table['act_symbol'] = dict['symbol']
+    table['date'] = dict['date']
+    # store table cannot handle datetime.dates
+    table['expiration'] = table['expiration'].astype(str)
+    table['date'] = table['date'].astype(str)
+    # we need the correct order of lolumns
+    table = table[['date', 'act_symbol', 'expiration', 'price']]
+    #
+    data.store_forward_prices(table)
+    #
+    vol_tables = []
+    for expiry, volatilities in zip(dict['expiry_dates'], dict['option_volatilities']):
+        table = pd.melt(
+            volatilities,
+            id_vars=['call_put', 'data_name'],
+            var_name='strike',
+            value_name='volatility',
+        )
+        table = pd.pivot_table(
+            table,
+            values=['volatility'],
+            index = ['call_put', 'strike'],
+            columns = ['data_name']
+        ).reset_index()
+        table.columns = ['call_put', 'strike', 'ask', 'bid', 'mid']
+        table['expiration'] = expiry
+        vol_tables.append(table)
+    #
+    table = pd.concat(vol_tables)
+    table['date'] = dict['date']
+    table['act_symbol'] = dict['symbol']
+    #
+    table['date'] = table['date'].astype(str)
+    table['expiration'] = table['expiration'].astype(str)
+    #
+    table = table[['date', 'act_symbol', 'expiration', 'strike', 'call_put', 'mid', 'bid', 'ask']]
+    #
+    data.store_volatilities(table)

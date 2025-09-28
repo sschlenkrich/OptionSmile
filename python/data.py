@@ -122,7 +122,16 @@ def store_table(table, conn, table_name):
         line = str(tuple(row)) + ", "
         sql = sql + line
     sql = sql[:-2] + ";"
+    # SQL does not understand nan
+    sql = sql.replace("nan", "NULL")  # this is dangerous
     #
     with conn.cursor() as curs:
         curs.execute(sql)
     conn.commit()
+
+
+def store_forward_prices(df):
+    store_table(df, __VOLATILITIES__, "forwardprice")
+
+def store_volatilities(df):
+    store_table(df, __VOLATILITIES__, "volatility")
