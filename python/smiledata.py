@@ -12,8 +12,22 @@ from forward import implied_forward_from_smile
 from volatilities import implied_volatilities
 
 def smile_data(symbol, date):
-    spot_price = float(data.spot_price(symbol, date).iloc[0]['close'])
-    disc_ytsh = yield_curve(date)
+    df_spot = data.spot_price(symbol, date)
+    if df_spot.shape[0] == 0:
+        return dict(message = "ERROR. No spot price for symbol " + symbol + ", date " + iso_date(date) + ".")
+    if df_spot.shape[0] > 1:
+        return dict(message = "ERROR. No unique spot price for symbol " + symbol + ", date " + iso_date(date) + ".")
+    spot_price = float(df_spot.iloc[0]['close'])
+    #
+    try:
+        disc_ytsh = yield_curve(date)
+    except Exception as e:
+        return dict(message = "ERROR. Cannot build yield curve for date " + iso_date(date) + ". " + str(e))
+    #
+    df_expiries = data.smile_expiries(symbol, date)
+    if df_expiries.shape[0] == 0:
+        return dict(message = "ERROR. No expiries for symbol " + symbol + ", date " + iso_date(date) + ".")
+    #
     expiry_dates = np.array(data.smile_expiries(symbol, date)['expiration'])
     # dividends = data.dividends(symbol, date, expiry_dates[-1])
     dividends = data.dividends(symbol, date, 4)
@@ -79,6 +93,7 @@ def smile_data(symbol, date):
         option_volatilities.append(option_vols)
     #
     return dict(
+        message = None,
         symbol = symbol,
         date = dt_date(date),
         spot_price = spot_price,
@@ -92,24 +107,35 @@ def smile_data(symbol, date):
     )
 
 
-def store_smile_data(symbol, date):
-    dict = smile_data(symbol, date)
+def store_smile_data(smile_dict=None, symbol=None, date=None):
+    if smile_dict is None:
+        smile_dict = smile_data(symbol, date)
+    #
+    if smile_dict['message'] is not None:
+        # an error occured and we cannot store results
+        return smile_dict
+    #
+    symbol = smile_dict['symbol']
+    date = iso_date(smile_dict['date'])
     #
     table = pd.DataFrame()
-    table['expiration'] = dict['expiry_dates']
-    table['price'] = dict['forward_prices']
-    table['act_symbol'] = dict['symbol']
-    table['date'] = dict['date']
+    table['expiration'] = smile_dict['expiry_dates']
+    table['price'] = smile_dict['forward_prices']
+    table['act_symbol'] = smile_dict['symbol']
+    table['date'] = smile_dict['date']
     # store table cannot handle datetime.dates
     table['expiration'] = table['expiration'].astype(str)
     table['date'] = table['date'].astype(str)
-    # we need the correct order of lolumns
-    table = table[['date', 'act_symbol', 'expiration', 'price']]
+    # we need the correct order of columns
+    fwd_table = table[['date', 'act_symbol', 'expiration', 'price']]
     #
-    data.store_forward_prices(table)
+    try:
+        data.store_forward_prices(fwd_table)
+    except Exception as e:
+        return dict(message = "ERROR. Cannot store forward prices for symbol " + symbol + ", date " + date + ". " + str(e))
     #
     vol_tables = []
-    for expiry, volatilities in zip(dict['expiry_dates'], dict['option_volatilities']):
+    for expiry, volatilities in zip(smile_dict['expiry_dates'], smile_dict['option_volatilities']):
         table = pd.melt(
             volatilities,
             id_vars=['call_put', 'data_name'],
@@ -127,12 +153,20 @@ def store_smile_data(symbol, date):
         vol_tables.append(table)
     #
     table = pd.concat(vol_tables)
-    table['date'] = dict['date']
-    table['act_symbol'] = dict['symbol']
+    table['date'] = smile_dict['date']
+    table['act_symbol'] = smile_dict['symbol']
     #
     table['date'] = table['date'].astype(str)
     table['expiration'] = table['expiration'].astype(str)
     #
-    table = table[['date', 'act_symbol', 'expiration', 'strike', 'call_put', 'mid', 'bid', 'ask']]
+    vol_table = table[['date', 'act_symbol', 'expiration', 'strike', 'call_put', 'mid', 'bid', 'ask']]
     #
-    data.store_volatilities(table)
+    try:
+        data.store_volatilities(vol_table)
+    except Exception as e:
+        return dict(message = "ERROR. Cannot store volatilities for symbol " + symbol + ", date " + date + ". " + str(e))
+    #
+    # We collect some statistics for logging
+    mess = "DONE. Store %d forward prices and %d volatilities for symbol %s, date %s." % \
+        (fwd_table.shape[0], vol_table.shape[0], symbol, date)
+    return dict(message = mess)
