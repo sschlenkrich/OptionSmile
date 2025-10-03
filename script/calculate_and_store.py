@@ -56,26 +56,32 @@ if __name__ == '__main__':
     last_date = dateutils.iso_date(queue.iloc[-1]["date"])
     logging.info("Find %d entries in queue, start date %s, end date %s." % (n_entries, first_date, last_date))
     logging.info("Start iterating queue...")
-    count = 0
     last_date = first_date
     for _, elem in queue.iterrows():
-        count += 1
-        if count > 510:
-            break
-        symbol = elem["act_symbol"]
-        date = dateutils.iso_date(elem["date"])
-        #
-        if date != last_date:
-            logging.info("Commit and push data for %s." % last_date)
-            messages = data.push_volatilities(last_date)
-            for m in messages:
-                logging.info(m)
-        last_date = date
-        #
-        logging.info("Process date %s, symbol %s." % (date, symbol))
         try:
-            # d = smiledata.store_smile_data(symbol=symbol, date=date)
-            logging.info(d["message"])
-        except Exception as e:
-            logging.warning("UNEXPECTED ERROR. Failed processing date %s, symbol %s." % (date, symbol))
-        #
+            symbol = elem["act_symbol"]
+            date = dateutils.iso_date(elem["date"])
+            #
+            if date != last_date:
+                logging.info("Commit and push data for %s." % last_date)
+                messages = data.push_volatilities(last_date)
+                for m in messages:
+                    logging.info(m)
+            last_date = date
+            #
+            logging.info("Process date %s, symbol %s." % (date, symbol))
+            try:
+                d = smiledata.store_smile_data(symbol=symbol, date=date)
+                logging.info(d["message"])
+            except Exception as e:
+                logging.warning("UNEXPECTED ERROR. Failed processing date %s, symbol %s." % (date, symbol))
+            #
+        except KeyboardInterrupt:
+            logging.info("Interrupt queue iteration.")
+            break
+    #
+    logging.info("Commit and push data for %s." % last_date)
+    messages = data.push_volatilities(last_date)
+    for m in messages:
+        logging.info(m)
+    logging.info("Finish script " + os.path.basename(__file__) + ".")
