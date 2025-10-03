@@ -196,7 +196,7 @@ def pull_volatilities():
     return mess_pull
 
 def push_volatilities(date):
-    sql_commit = "CALL DOLT_COMMIT('-A', '-m', 'Update for %s')" % str(date)
+    sql_commit = "CALL DOLT_COMMIT('-a', '-m', 'Update for %s')" % str(date)
     sql_push = "CALL DOLT_PUSH('origin', 'main')"
     conn = __VOLATILITIES__
     try:
