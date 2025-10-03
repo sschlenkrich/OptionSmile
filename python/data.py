@@ -135,3 +135,80 @@ def store_forward_prices(df):
 
 def store_volatilities(df):
     store_table(df, __VOLATILITIES__, "volatility")
+
+
+def queue(symbols = None, dates_ascending = False):
+    sql = "select distinct date, act_symbol from option_chain"
+    all_chains = pd.read_sql(sql, __OPTIONS__)
+    if symbols is not None:
+        all_chains = all_chains[all_chains["act_symbol"].isin(symbols)]
+    #
+    sql = "select distinct date, act_symbol from volatility"
+    all_vols = pd.read_sql(sql, __VOLATILITIES__)
+    if symbols is not None:
+        all_vols = all_vols[all_vols["act_symbol"].isin(symbols)]
+    #
+    all_chains['KEY'] = all_chains['date'].astype(str).str.cat(all_chains['act_symbol'], sep="|")
+    all_vols['KEY'] = all_vols['date'].astype(str).str.cat(all_vols['act_symbol'], sep="|")
+    intersect = pd.merge(all_chains['KEY'], all_vols['KEY'], how='inner', on='KEY')
+    #
+    open_chains = all_chains[~all_chains['KEY'].isin(intersect['KEY'])].drop("KEY", axis=1)
+    sort_asc = (dates_ascending, True)
+    open_chains = open_chains.sort_values(by=['date', 'act_symbol'], ascending=sort_asc)
+    return open_chains
+
+
+def update_database(conn):
+    sql_pull = "CALL DOLT_PULL('post-no-preference')"
+    sql_push = "CALL DOLT_PUSH('origin', 'master')"
+    try:
+        df = pd.read_sql(sql_pull, conn)
+        mess_pull = "PULL: " + df.iloc[0]["message"]
+    except Exception as e:
+        mess_pull = "ERROR while pull " + str(conn.db) + ". " + str(e)
+    #
+    try:
+        df = pd.read_sql(sql_push, conn)
+        mess_push = "PUSH: " + df.iloc[0]["message"]
+    except Exception as e:
+        mess_push = "ERROR while push " + str(conn.db) + ". " + str(e)
+    #
+    return (mess_pull, mess_push)
+
+def update_rates():
+    return update_database(__RATES__)
+
+def update_stocks():
+    return update_database(__STOCKS__)
+
+def update_options():
+    return update_database(__OPTIONS__)
+
+def pull_volatilities():
+    sql_pull = "CALL DOLT_PULL('origin')"
+    conn = __VOLATILITIES__
+    try:
+        df = pd.read_sql(sql_pull, conn)
+        mess_pull = "PULL: " + df.iloc[0]["message"]
+    except Exception as e:
+        mess_pull = "ERROR while pull " + str(conn.db) + ". " + str(e)
+    #
+    return mess_pull
+
+def push_volatilities(date):
+    sql_commit = "CALL DOLT_COMMIT('-A', '-m', 'Update for %s')" % str(date)
+    sql_push = "CALL DOLT_PUSH('origin', 'main')"
+    conn = __VOLATILITIES__
+    try:
+        df = pd.read_sql(sql_commit, conn)
+        mess_comm = "COMMIT: " + df.iloc[0]["hash"]
+    except Exception as e:
+        mess_comm = "ERROR while commit " + str(conn.db) + ". " + str(e)
+    #
+    try:
+        df = pd.read_sql(sql_push, conn)
+        mess_push = "PUSH: " + df.iloc[0]["message"]
+    except Exception as e:
+        mess_push = "ERROR while push " + str(conn.db) + ". " + str(e)
+    #
+    return (mess_comm, mess_push)
