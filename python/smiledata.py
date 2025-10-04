@@ -146,7 +146,8 @@ def store_smile_data(smile_dict=None, symbol=None, date=None):
             table,
             values=['volatility'],
             index = ['call_put', 'strike'],
-            columns = ['data_name']
+            columns = ['data_name'],
+            dropna = False,
         ).reset_index()
         table.columns = ['call_put', 'strike', 'ask', 'bid', 'mid']
         table['expiration'] = expiry

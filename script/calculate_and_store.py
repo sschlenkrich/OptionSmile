@@ -74,7 +74,7 @@ if __name__ == '__main__':
                 d = smiledata.store_smile_data(symbol=symbol, date=date)
                 logging.info(d["message"])
             except Exception as e:
-                logging.warning("UNEXPECTED ERROR. Failed processing date %s, symbol %s." % (date, symbol))
+                logging.warning(("UNEXPECTED ERROR. Failed processing date %s, symbol %s. " % (date, symbol)) + str(e))
             #
         except KeyboardInterrupt:
             logging.info("Interrupt queue iteration.")

@@ -2,6 +2,8 @@
 import pandas as pd
 import pymysql
 
+from dateutils import iso_date
+
 __RATES__ = None
 __STOCKS__ = None
 __OPTIONS__ = None
@@ -34,8 +36,7 @@ def initialise():
 
 
 def interest_rates(date):
-    if type(date) != str:
-        date = date.isoformat()
+    date = iso_date(date)
     q = "select * from us_treasury where date='%s'" % date
     df = pd.read_sql(q, __RATES__)
     df.columns = [ # as period string
@@ -46,8 +47,7 @@ def interest_rates(date):
 
 
 def spot_price(symbol, date):
-    if type(date) != str:
-        date = date.isoformat()
+    date = iso_date(date)
     q = "select * from ohlcv where act_symbol = '%s' and date='%s'" % (symbol, date)
     df = pd.read_sql(q, __STOCKS__)
     df = df[['date', 'act_symbol', 'close']]
@@ -55,8 +55,7 @@ def spot_price(symbol, date):
 
 
 def dividends(symbol, date, maximum=None):
-    if type(date) != str:
-        date = date.isoformat()
+    date = iso_date(date)
     q = \
     '''
     select act_symbol, Date('%s') as date, ex_date, amount
@@ -83,14 +82,14 @@ def dividends(symbol, date, maximum=None):
 
 
 def smile_expiries(symbol, date):
+    date = iso_date(date)
     q = "select distinct(expiration) as expiration from option_chain where act_symbol='%s' and date='%s'" % (symbol, date)
     df = pd.read_sql(q, __OPTIONS__)
     return df
 
 
 def smile_prices(symbol, date, expiry_date = None, values = ['bid', 'ask']):
-    if type(date) != str:
-        date = date.isoformat()
+    date = iso_date(date)
     index = [
         "date", "act_symbol", "expiration", "call_put",
     ]
