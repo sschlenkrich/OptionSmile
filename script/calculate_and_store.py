@@ -21,7 +21,11 @@ if __name__ == '__main__':
     import smiledata
     import dateutils
     #
-    warnings.simplefilter(action='ignore', category=UserWarning)  # suppress pandas sql warning
+    warnings.filterwarnings(
+        action = 'ignore',
+        message = 'pandas only supports SQLAlchemy connectable',
+        category = UserWarning,
+    )  # suppress pandas sql warning
     #
     symbols_file_name = os.path.join(dirname, "../data/SP500.csv")
     logging.info("Read symbols from file " + os.path.basename(symbols_file_name) + ".")

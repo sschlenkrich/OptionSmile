@@ -54,7 +54,7 @@ def smile_data(symbol, date):
         # we aim for a robust strategy for estimate forward prices
         forward_price = None
         div_yield = None
-        for div_rate_min, div_rate_max in [(-0.05, 0.05), (-0.25, 0.25)]:
+        for div_rate_min, div_rate_max in [(-0.05, 0.05), (-0.25, 0.25), (-1.00, 1.00)]:
             try:
                 forward_price, div_yield = implied_forward_from_smile(
                     date, spot_price, disc_ytsh, dividend_ex_dates, dividend_amounts, expiry_date, strikes,
