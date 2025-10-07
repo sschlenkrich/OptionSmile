@@ -3,4 +3,4 @@
 dolt/
 
 # do not commit host-specific paths
-set_volumne_paths.bat
+set_volume_paths.bat
