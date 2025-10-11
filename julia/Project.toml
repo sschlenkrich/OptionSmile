@@ -1,0 +1,9 @@
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"
+MySQL = "39abe10b-433b-5dbd-92d4-e302a9df00cd"
+PiecewiseVanillaModel = "2871cd80-17e4-4ef4-9e92-1aa15777f3b2"
+PlotlyBase = "a03496cd-edff-5a9b-9e67-9cda94a718b5"
+PlotlyKaleido = "f2990250-8cf9-495f-b13a-cce12b45703c"
+StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
