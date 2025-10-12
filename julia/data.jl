@@ -17,3 +17,10 @@ function smile_data(conn, symbol, date)
     df = DataFrame(DBInterface.execute(conn, sql))
     return df
 end
+
+
+function smile_data(conn, date)
+    sql = "select * from smile where date = '$(string(date))';"
+    df = DataFrame(DBInterface.execute(conn, sql))
+    return df
+end

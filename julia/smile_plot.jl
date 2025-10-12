@@ -205,7 +205,10 @@ function smile_plot(df::DataFrame, models::Vector{Any})
     end
     #
     l = @layout [a ; b ]
-    p = plot(p1, p2; layout = l)
+    p = plot(p1, p2;
+        layout = l,
+        size = (800, 600),
+    )
     return p
 end
 
@@ -228,4 +231,31 @@ function smile_plot(
     models = calibrated_models(df, p, α=α, lmfit_kwargs=lmfit_kwargs)
     p = smile_plot(df, models)
     return p
+end
+
+
+function smile_plot_date_all(
+    conn,
+    date::String,
+    p::ModelParameter,
+    path::String,
+    ;
+    α = 0.0,
+    lmfit_kwargs = (
+        autodiff = :forwarddiff,
+        maxIter  = 10
+
+    ),
+    )
+    #
+    df = smile_data(conn, date)
+    symbols = unique(df.act_symbol)
+    for symbol in symbols
+        println("Process $symbol.")
+        df2 = df[df.act_symbol.==symbol, :]
+        models = calibrated_models(df2, p, α=α, lmfit_kwargs=lmfit_kwargs)
+        plt = smile_plot(df2, models)
+        file_name = path * date * "_" * symbol * ".png"
+        savefig(plt, file_name)
+    end
 end

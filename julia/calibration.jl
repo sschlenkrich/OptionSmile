@@ -116,7 +116,7 @@ function calibrated_models(
             # maybe better check convergence here...
             push!(models, res.model)
         catch
-            push(models, nothing)
+            push!(models, nothing)
         end
     end
     return models
