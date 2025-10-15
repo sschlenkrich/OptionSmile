@@ -3,6 +3,7 @@ include("data.jl")
 include("model.jl")
 include("calibration.jl")
 include("smile_plot.jl")
+include("store_data.jl")
 
 conn = connection()
 
