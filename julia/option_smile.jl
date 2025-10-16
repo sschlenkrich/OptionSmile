@@ -14,5 +14,8 @@ p = ModelParameter(
     [1, 2, 3, 5, 7, 10, 15, 20, 25, 30] .* 1.0e-2,
     "LOGNORMAL",
     "NOTHING",
+    1.0e-2,
+    :forwarddiff,
+    10
 )
 

@@ -28,17 +28,16 @@ end
 function calibrated_model(
     p::ModelParameter,
     strikes::AbstractVector,
-    b76_volatilities::AbstractVector;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-    ),
+    b76_volatilities::AbstractVector,
     )
     #
-    F(x) = calibration_objective(x, p, strikes, b76_volatilities, α)
+    F(x) = calibration_objective(x, p, strikes, b76_volatilities, p.alpha)
     x0 = initial_values(p)
     y0 = F(x0)
+    lmfit_kwargs = (
+        autodiff = p.autodiff,
+        maxIter  = p.maxIter
+    )
     res = LsqFit.lmfit(
         F,
         x0,
@@ -74,12 +73,6 @@ actual365fixed(d1::Date, d2::Date) = (d2 - d1) / Day(1) / 365.0
 function calibrated_model(
     df::DataFrame,
     p::ModelParameter,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-    ),
     )
     float_type = Float64  # we may opt to use other types
     expiry = unique(df.expiration)
@@ -91,28 +84,22 @@ function calibrated_model(
     strikes = Vector{float_type}(df.strike)
     vols = Vector{float_type}(df.mid)
     σ_b76 = interpolate(strikes, vols, forward)
-    p_ = ModelParameter(σ_b76, forward, T, p.ds_relative, p.rexl, p.rexu)
+    p_ = ModelParameter(σ_b76, forward, T, p.ds_relative, p.rexl, p.rexu, p.alpha, p.autodiff, p.maxIter)
     #
-    return calibrated_model(p_, strikes, vols, α=α, lmfit_kwargs=lmfit_kwargs)
+    return calibrated_model(p_, strikes, vols)
 end
 
 
 function calibrated_models(
     df::DataFrame,
     p::ModelParameter,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-    ),
     )
     expiries = unique(df.expiration)
     models = []
     for expiry in expiries
         df2 = df[df.expiration.==expiry, :]
         try
-            res = calibrated_model(df2, p, α=α, lmfit_kwargs=lmfit_kwargs)
+            res = calibrated_model(df2, p)
             # maybe better check convergence here...
             push!(models, res.model)
         catch

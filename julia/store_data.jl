@@ -7,7 +7,6 @@ function store_model(
     expiration,
     model::pvm.Model,
     param::ModelParameter,
-    α::Number,
     )
     #
     date = Date(date)
@@ -50,7 +49,7 @@ function store_model(
     sql = sql * string(log_volatility) * ", "
     sql = sql * "'" * param.rexl * "', "
     sql = sql * "'" * param.rexu * "', " 
-    sql = sql * string(α) * ");"
+    sql = sql * string(param.alpha) * ");"
     # println(sql)
     DBInterface.execute(conn, sql)
     #
@@ -80,12 +79,6 @@ function store_model(
     conn,
     df::DataFrame,
     param::ModelParameter,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-    ),
     )
     #
     @assert length(unique(df.date)) == 1
@@ -98,13 +91,13 @@ function store_model(
     #
     local model
     try
-        (model, _) = calibrated_model(df, p, α=α, lmfit_kwargs=lmfit_kwargs)
+        (model, _) = calibrated_model(df, p,)
     catch
         @warn "Cannot calibrate model for $act_symbol, $(string(date)), expiry $(string(expiration))."
         return
     end
     #
-    store_model(conn, date, act_symbol, expiration, model, param, α)
+    store_model(conn, date, act_symbol, expiration, model, param)
     @info "Store model for $act_symbol, $(string(date)), expiry $(string(expiration))."
 end
 
@@ -113,12 +106,6 @@ function store_models(
     conn,
     df::DataFrame,
     param::ModelParameter,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-    ),
     )
     symbols = unique(df.act_symbol)
     for symbol in symbols
@@ -126,7 +113,7 @@ function store_models(
         expiries = unique(df2.expiration)
         for expiry in expiries
             df3 = df2[df2.expiration.==expiry, :]
-            store_model(conn, df3, param, α=α, lmfit_kwargs=lmfit_kwargs)
+            store_model(conn, df3, param)
         end
     end
 end

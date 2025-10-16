@@ -218,17 +218,10 @@ function smile_plot(
     symbol::String,
     date::String,
     p::ModelParameter,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-
-    ),
     )
     #
     df = smile_data(conn, symbol, date)
-    models = calibrated_models(df, p, α=α, lmfit_kwargs=lmfit_kwargs)
+    models = calibrated_models(df, p)
     p = smile_plot(df, models)
     return p
 end
@@ -239,13 +232,6 @@ function smile_plot_date_all(
     date::String,
     p::ModelParameter,
     path::String,
-    ;
-    α = 0.0,
-    lmfit_kwargs = (
-        autodiff = :forwarddiff,
-        maxIter  = 10
-
-    ),
     )
     #
     df = smile_data(conn, date)
@@ -253,7 +239,7 @@ function smile_plot_date_all(
     for symbol in symbols
         println("Process $symbol.")
         df2 = df[df.act_symbol.==symbol, :]
-        models = calibrated_models(df2, p, α=α, lmfit_kwargs=lmfit_kwargs)
+        models = calibrated_models(df2, p)
         plt = smile_plot(df2, models)
         file_name = path * date * "_" * symbol * ".png"
         savefig(plt, file_name)

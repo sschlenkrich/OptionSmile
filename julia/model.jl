@@ -2,6 +2,19 @@
 using PiecewiseVanillaModel
 pvm = PiecewiseVanillaModel  # alias
 
+struct ModelParameter{FloatType, StringType}
+    σ_b76::FloatType
+    forward::FloatType
+    T::FloatType
+    ds_relative::Vector{FloatType}
+    rexl::StringType
+    rexu::StringType
+    alpha::FloatType
+    autodiff::Symbol
+    maxIter::Int
+end
+
+
 function model_inputs(x::AbstractVector)
     @assert length(x) ≥ 3  # atm vol parameter and at least two smile param's
     @assert length(x) % 2 == 1
@@ -29,20 +42,9 @@ function initial_values(σ_b76, forward, T, n_slope)
 end
 
 
-struct ModelParameter{FloatType, StringType}
-    σ_b76::FloatType
-    forward::FloatType
-    T::FloatType
-    ds_relative::Vector{FloatType}
-    rexl::StringType
-    rexu::StringType
-end
-
-
 function initial_values(p::ModelParameter)
     return initial_values(p.σ_b76, p.forward, p.T, length(p.ds_relative))
 end
-
 
 
 function model(x::AbstractVector, p::ModelParameter)
