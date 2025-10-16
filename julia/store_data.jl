@@ -118,3 +118,26 @@ function store_models(
     end
 end
 
+
+function queue(conn)
+    query(q) = DataFrame(DBInterface.execute(conn, q))
+    df_all = query("select distinct date, act_symbol from smile")
+    df_mod = query("select distinct date, act_symbol from expiry_parameter")
+    df_join = leftjoin(df_all, df_mod, on=[:date, :act_symbol], source=:source)
+    df_join = df_join[df_join.source.=="left_only", :]
+    return df_join[:, [:date, :act_symbol]]
+end
+
+
+function store_models_from_queue(conn, param::ModelParameter)
+    @info "Calculate queue..."
+    df_q = queue(conn)
+    all_dates = reverse(unique(df_q.date))
+    for date in all_dates
+        df_symbols = df_q[df_q.date.==date, :]
+        @info "Retrieve data for $(string(date))."
+        df_all_symbols = smile_data(conn, date)
+        df_smiles = innerjoin(df_all_symbols, df_symbols, on=[:date, :act_symbol])
+        store_models(conn, df_smiles, param)
+    end
+end
