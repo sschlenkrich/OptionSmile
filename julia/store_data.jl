@@ -120,7 +120,6 @@ end
 
 
 function queue(conn)
-    query(q) = DataFrame(DBInterface.execute(conn, q))
     df_all = query("select distinct date, act_symbol from smile")
     df_mod = query("select distinct date, act_symbol from expiry_parameter")
     df_join = leftjoin(df_all, df_mod, on=[:date, :act_symbol], source=:source)
