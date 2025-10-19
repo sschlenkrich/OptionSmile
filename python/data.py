@@ -136,7 +136,7 @@ def store_volatilities(df):
     store_table(df, __VOLATILITIES__, "volatility")
 
 
-def queue(symbols = None, dates_ascending = False):
+def queue_all(symbols = None, dates_ascending = False):
     sql = "select distinct date, act_symbol from option_chain"
     all_chains = pd.read_sql(sql, __OPTIONS__)
     if symbols is not None:
@@ -154,6 +154,21 @@ def queue(symbols = None, dates_ascending = False):
     open_chains = all_chains[~all_chains['KEY'].isin(intersect['KEY'])].drop("KEY", axis=1)
     sort_asc = (dates_ascending, True)
     open_chains = open_chains.sort_values(by=['date', 'act_symbol'], ascending=sort_asc)
+    return open_chains
+
+
+def queue_new(symbols = None, dates_ascending = True):
+    sql = "select max(date) as date from volatility"
+    max_date_df = pd.read_sql(sql, __VOLATILITIES__)
+    max_date_str = iso_date(max_date_df.iloc[0]['date'])
+    #
+    sql = "select distinct date, act_symbol from option_chain where date > '%s'" % max_date_str
+    all_chains = pd.read_sql(sql, __OPTIONS__)
+    if symbols is not None:
+        all_chains = all_chains[all_chains["act_symbol"].isin(symbols)]
+    #
+    sort_asc = (dates_ascending, True)
+    open_chains = all_chains.sort_values(by=['date', 'act_symbol'], ascending=sort_asc)
     return open_chains
 
 

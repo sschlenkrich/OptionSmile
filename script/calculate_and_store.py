@@ -53,8 +53,8 @@ if __name__ == '__main__':
     message = data.pull_volatilities()
     logging.info(message)    
     #
-    logging.info("Read queue from databases, this takes few minutes...")
-    queue = data.queue(symbols)
+    logging.info("Read queue from databases, this may take few minutes...")
+    queue = data.queue_new(symbols)
     n_entries = queue.shape[0]
     first_date = dateutils.iso_date(queue.iloc[0]["date"])
     last_date = dateutils.iso_date(queue.iloc[-1]["date"])
