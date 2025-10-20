@@ -56,6 +56,9 @@ if __name__ == '__main__':
     logging.info("Read queue from databases, this may take few minutes...")
     queue = data.queue_new(symbols)
     n_entries = queue.shape[0]
+    if n_entries == 0:
+        logging.info("Resulting queue is empty. Exit script " + os.path.basename(__file__) + ".")
+        exit()
     first_date = dateutils.iso_date(queue.iloc[0]["date"])
     last_date = dateutils.iso_date(queue.iloc[-1]["date"])
     logging.info("Find %d entries in queue, start date %s, end date %s." % (n_entries, first_date, last_date))
