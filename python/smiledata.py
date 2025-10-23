@@ -20,7 +20,7 @@ def smile_data(symbol, date):
     spot_price = float(df_spot.iloc[0]['close'])
     #
     try:
-        disc_ytsh = yield_curve(date)
+        disc_ytsh = yield_curve(date, use_most_recent = True)
     except Exception as e:
         return dict(message = "ERROR. Cannot build yield curve for date " + iso_date(date) + ". " + str(e))
     #

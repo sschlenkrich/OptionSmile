@@ -54,7 +54,7 @@ if __name__ == '__main__':
     logging.info(message)    
     #
     logging.info("Read queue from databases, this may take few minutes...")
-    queue = data.queue_new(symbols)
+    queue = data.queue_all(symbols)
     n_entries = queue.shape[0]
     if n_entries == 0:
         logging.info("Resulting queue is empty. Exit script " + os.path.basename(__file__) + ".")

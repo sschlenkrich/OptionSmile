@@ -35,8 +35,15 @@ def initialise():
     }
 
 
-def interest_rates(date):
+def interest_rates(date, use_most_recent=False):
     date = iso_date(date)
+    if use_most_recent:
+        q = "select max(date) as max_date from us_treasury where date <= '%s'" % date
+        df = pd.read_sql(q, __RATES__)
+        if df.shape == (1, 1):
+            date = iso_date(df.iloc[0][0])
+        #
+    #
     q = "select * from us_treasury where date='%s'" % date
     df = pd.read_sql(q, __RATES__)
     df.columns = [ # as period string
