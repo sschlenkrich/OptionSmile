@@ -53,8 +53,15 @@ def interest_rates(date, use_most_recent=False):
     return df
 
 
-def spot_price(symbol, date):
+def spot_price(symbol, date, use_most_recent=False):
     date = iso_date(date)
+    if use_most_recent:
+        q = "select max(date) as max_date from ohlcv where act_symbol = '%s' and date <= '%s'" % (symbol, date)
+        df = pd.read_sql(q, __STOCKS__)
+        if df.shape == (1, 1):
+            date = iso_date(df.iloc[0][0])
+        #
+    #
     q = "select * from ohlcv where act_symbol = '%s' and date='%s'" % (symbol, date)
     df = pd.read_sql(q, __STOCKS__)
     df = df[['date', 'act_symbol', 'close']]

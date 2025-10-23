@@ -12,7 +12,7 @@ from forward import implied_forward_from_smile
 from volatilities import implied_volatilities
 
 def smile_data(symbol, date):
-    df_spot = data.spot_price(symbol, date)
+    df_spot = data.spot_price(symbol, date, use_most_recent = True)
     if df_spot.shape[0] == 0:
         return dict(message = "ERROR. No spot price for symbol " + symbol + ", date " + iso_date(date) + ".")
     if df_spot.shape[0] > 1:
