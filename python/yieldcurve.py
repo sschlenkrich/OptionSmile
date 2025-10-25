@@ -13,8 +13,8 @@ def continuous_rate(semi_anual_rate, months):
         cont_rates = np.log(np.power(1.0 + semi_anual_rate/2.0, 2 * months / 12)) / (months / 12.0)
     return cont_rates
 
-def yield_curve(date):
-    df = data.interest_rates(iso_date(date))
+def yield_curve(date, use_most_recent=False):
+    df = data.interest_rates(iso_date(date), use_most_recent=use_most_recent)
     assert df.shape[0] == 1 
     maturity_periods = [ ql.Period(t) for t in df.columns[1:] ]
     maturity_months = [ months(p) for p in maturity_periods ]
