@@ -1,7 +1,4 @@
 
-using DataFrames
-using MySQL
-
 function connection(db_name = "volatilities")
     return DBInterface.connect(
         MySQL.Connection,
@@ -44,4 +41,13 @@ function smile_data(conn, date)
     df_smile = innerjoin(df_e, df_v, on=[:date, :act_symbol, :expiration])
     df_smile = df_smile[_smile_indices(df_smile), :]
     return df_smile
+end
+
+function volatility_dates(conn, symbol, start_date, end_date)
+    q = "select distinct(date) as date from forwardprice "
+    q = q * "where act_symbol = '$symbol' "
+    q = q * "and date >= '$(string(start_date))' "
+    q = q * "and date <= '$(string(end_date))' "
+    q = q * "order by date;"
+    return query(conn, q, false)
 end

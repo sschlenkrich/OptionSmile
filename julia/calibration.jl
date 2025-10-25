@@ -1,6 +1,4 @@
 
-using Dates
-using LsqFit
 
 function calibration_objective(x, p, strikes, b76_volatilities, α)
     @assert length(strikes) == length(b76_volatilities)

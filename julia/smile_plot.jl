@@ -1,6 +1,4 @@
 
-using Printf
-using StatsPlots
 
 function smile_plot(conn, symbol, date)
     df = smile_data(conn, symbol, date)
@@ -19,7 +17,7 @@ function smile_plot(df::DataFrame, seriestype = :path)
     p = plot(
         title = "$symbol, $(string(date))",
         xlabel = "strike",
-        ylabel = "volatility",
+        ylabel = "implied volatility (%)",
         titlefontsize = 10,
         xguidefontsize = 10,
         yguidefontsize = 10,
@@ -30,13 +28,18 @@ function smile_plot(df::DataFrame, seriestype = :path)
         df_p = df_e[df_e.call_put.=="Put", :]
         df_c = df_e[df_e.call_put.=="Call", :]
         #
-        p_err_bot = df_p.mid .- df_p.bid
-        p_err_top = df_p.ask .- df_p.mid
+        scaling = 100.0  # vols in percentage
         #
-        c_err_bot = df_c.mid .- df_c.bid
-        c_err_top = df_c.ask .- df_c.mid
+        p_mid = df_p.mid .* scaling
+        c_mid = df_c.mid .* scaling
         #
-        plot!(p, df_p.strike, df_p.mid,
+        p_err_bot = (df_p.mid .- df_p.bid) .* scaling
+        p_err_top = (df_p.ask .- df_p.mid) .* scaling
+        #
+        c_err_bot = (df_c.mid .- df_c.bid) .* scaling
+        c_err_top = (df_c.ask .- df_c.mid) .* scaling
+        #
+        plot!(p, df_p.strike, p_mid,
             yerror = (p_err_bot, p_err_top),
             label = "P $(string(expiry))",
             color = :blue,
@@ -44,7 +47,7 @@ function smile_plot(df::DataFrame, seriestype = :path)
             markershape = markers[idx%n + 1],
             markersize = marker_size,
         )
-        plot!(p, df_c.strike, df_c.mid,
+        plot!(p, df_c.strike, c_mid,
             yerror = (c_err_bot, c_err_top),
             label = "C $(string(expiry))",
             seriestype = seriestype,
@@ -135,20 +138,28 @@ function model_plot(m, ref_strikes = nothing, ref_vols = nothing)
 end
 
 
-function smile_plot(df::DataFrame, models::Vector{Any})
+function smile_plot(
+    df::DataFrame,
+    models::Vector{Any};
+    ylims1 = :auto,
+    ylims2 = :auto,
+    )
+    #
     markers = [ :circle, :rect, :diamond ]
     legend_position = :outerright
     n = length(markers)
     marker_size = 1.5
     p1 = smile_plot(df, :scatter)
+    plot!(p1, ylims = ylims1)
     p2 = plot(
-        title = "Volatility parameters",
+        title = "Volatility model parameters",
         xlabel = "strike",
-        ylabel = "volatility",
+        ylabel = "volatility (abs price)",
         titlefontsize = 10,
         xguidefontsize = 10,
         yguidefontsize = 10,
         legend_position = legend_position,
+        ylims = ylims2
         )
     for (idx, m) in enumerate(models)
         if isnothing(m)
@@ -183,7 +194,9 @@ function smile_plot(df::DataFrame, models::Vector{Any})
         s0 = @sprintf "%.2f" m.s0
         T = @sprintf "%.2f" m.T
         #
-        plot!(p1, strikes, vols,
+        scaling = 100.0  # implied vols in percentage
+        #
+        plot!(p1, strikes, vols .* scaling,
             label = nothing,
             color = :green,
         )
@@ -217,12 +230,16 @@ function smile_plot(
     conn,
     symbol::String,
     date::String,
-    p::ModelParameter,
+    p::ModelParameter;
+    xlims = :auto,
+    ylims1 = :auto,
+    ylims2 = :auto,
     )
     #
     df = smile_data(conn, symbol, date)
     models = calibrated_models(df, p)
-    p = smile_plot(df, models)
+    p = smile_plot(df, models, ylims1 = ylims1, ylims2=ylims2)
+    plot!(p, xlims=xlims)
     return p
 end
 
@@ -244,4 +261,31 @@ function smile_plot_date_all(
         file_name = path * date * "_" * symbol * ".png"
         savefig(plt, file_name)
     end
+end
+
+
+function smile_plot(
+    conn,
+    symbol::String,
+    start_date::String,
+    end_date::String,
+    p::ModelParameter;
+    xlims = :auto,
+    ylims1 = :auto,
+    ylims2 = :auto,
+    animate = false,
+    )
+    #
+    a = Animation()
+    dates = volatility_dates(conn, symbol, start_date, end_date)
+    for d in dates.date
+        plt = smile_plot(conn, symbol, string(d), p2; xlims=xlims, ylims1=ylims1, ylims2=ylims2)
+        if animate
+            frame(a, plt)
+        else
+            display(plt)
+            sleep(1)
+        end
+    end
+    return a
 end

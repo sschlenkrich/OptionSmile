@@ -1,7 +1,4 @@
 
-using PiecewiseVanillaModel
-pvm = PiecewiseVanillaModel  # alias
-
 struct ModelParameter{FloatType, StringType}
     σ_b76::FloatType
     forward::FloatType
