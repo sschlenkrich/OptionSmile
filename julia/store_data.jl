@@ -91,7 +91,7 @@ function store_model(
     #
     local model
     try
-        (model, _) = calibrated_model(df, p,)
+        (model, _) = calibrated_model(df, param)
     catch
         @warn "Cannot calibrate model for $act_symbol, $(string(date)), expiry $(string(expiration))."
         return
@@ -119,24 +119,24 @@ function store_models(
 end
 
 
-function queue(conn)
-    df_all = query("select distinct date, act_symbol from smile")
-    df_mod = query("select distinct date, act_symbol from expiry_parameter")
-    df_join = leftjoin(df_all, df_mod, on=[:date, :act_symbol], source=:source)
-    df_join = df_join[df_join.source.=="left_only", :]
-    return df_join[:, [:date, :act_symbol]]
+function queue(conn, symbol)
+    q = "select distinct date, act_symbol from forwardprice "
+    q = q * "where act_symbol = '$symbol'"
+    q = q * "order by date;"
+    df = query(conn, q)
+    return df
 end
 
 
-function store_models_from_queue(conn, param::ModelParameter)
+function store_models_from_queue(conn, symbol, param::ModelParameter)
     @info "Calculate queue..."
-    df_q = queue(conn)
-    all_dates = reverse(unique(df_q.date))
-    for date in all_dates
-        df_symbols = df_q[df_q.date.==date, :]
-        @info "Retrieve data for $(string(date))."
-        df_all_symbols = smile_data(conn, date)
-        df_smiles = innerjoin(df_all_symbols, df_symbols, on=[:date, :act_symbol])
-        store_models(conn, df_smiles, param)
+    df_q = queue(conn, symbol)
+    @info "Found $(string(size(df_q))) entries from $(string(df_q[begin, 1])) to $(string(df_q[end, 1]))."
+    @info "Calculate smile data..."
+    df_smiles = smile_data(conn, symbol)
+    @info "Found $(string(size(df_smiles))) entries."
+    for date in df_q.date
+        df_date = df_smiles[df_smiles.date .== date, :]
+        store_models(conn, df_date, param)
     end
 end

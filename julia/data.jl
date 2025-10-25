@@ -18,8 +18,10 @@ function query(conn, sql, drop_missing = true)
     return df
 end
 
-_sql(table, date) = "select * from $table where date = '$(string(date))';"
 _sql(table, date, symbol) = "select * from $table where date = '$(string(date))' and act_symbol = '$symbol';"
+_sql_symbols(table, date) = "select * from $table where date = '$(string(date))';"
+_sql_dates(table, symbol) = "select * from $table where act_symbol = '$symbol';"
+
 _smile_indices(df) =
     (df.mid .> 0.01) .&
     (df.bid .> 0.01) .&
@@ -35,9 +37,9 @@ function smile_data(conn, symbol, date)
     return df_smile
 end
 
-function smile_data(conn, date)
-    df_v = query(conn, _sql("volatility", date))
-    df_e = query(conn, _sql("forwardprice", date))
+function smile_data(conn, symbol)
+    df_v = query(conn, _sql_dates("volatility", symbol))
+    df_e = query(conn, _sql_dates("forwardprice", symbol))
     df_smile = innerjoin(df_e, df_v, on=[:date, :act_symbol, :expiration])
     df_smile = df_smile[_smile_indices(df_smile), :]
     return df_smile
