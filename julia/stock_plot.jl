@@ -13,6 +13,10 @@ function stock_plot(
     q = q * "order by date;"
     df = query(conn, q)
     #
+    hover = [
+        string(d) * ", " * string(round(p, digits=2))
+        for (d, p) in zip(df.date, df.close)
+    ]
     p = plot(df.date, df.close,
         title = "Close price $(symbol)",
         xlabel = "date",
@@ -24,7 +28,8 @@ function stock_plot(
         seriestype = :path,
         marker = :circle,
         markersize = 2,
-        size = (800, 600),
+        size = (600, 400),
+        hover = hover
         )
     return p
 end
