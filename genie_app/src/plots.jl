@@ -227,14 +227,16 @@ end
 function vol_parameter_layout(
     act_symbol,
     date,
+    model_param,
     x_min_text,
     x_max_text,
     y_min_text,
     y_max_text,
     )
     #
+    α = @sprintf "%.2e" model_param.alpha
     PlotlyBase.Layout(
-        title="Volatility model parameters",
+        title="Volatility model parameters, α = $α",
         xaxis=PlotlyBase.attr(
             title="strike",
             showgrid=true,

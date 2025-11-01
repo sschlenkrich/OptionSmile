@@ -13,6 +13,7 @@ import PlotlyBase
 import ..OptionSmile   # re-use data and model calibration
 
 include("src/plots.jl")
+include("src/model.jl")
 
 # initialise input variables
 
@@ -20,7 +21,9 @@ initial_values = (
     act_symbol = "AAPL",
     start_date = Date("2022-04-01"),
     end_date   = Date("2022-07-01"),
-
+    smoothing  = 6,
+    rexl = "LOGNORMAL",
+    rexu = "LINEAR",
 )
 
 # initial volatilities
@@ -32,11 +35,17 @@ vol_dates_df = OptionSmile.volatility_dates(
     initial_values.end_date
 )
 
+model_param = model_parameter(
+    initial_values.smoothing,
+    initial_values.rexl,
+    initial_values.rexu,
+)
+
 (traces1, traces2) = smile_traces(
     OptionSmile.conn,
     initial_values.act_symbol,
     vol_dates_df.date[begin],
-    OptionSmile.p2,
+    model_param,
 )
 
 layout1 = implied_vol_layout(
@@ -51,6 +60,7 @@ layout1 = implied_vol_layout(
 layout2 = vol_parameter_layout(
     initial_values.act_symbol,
     initial_values.start_date,
+    model_param,
     "", # x_min_text
     "", # x_max_text
     "", # y_min_text
@@ -90,9 +100,9 @@ layout3 = stock_layout(initial_values.act_symbol)
     @out p3_layout = layout3
 
     #
-    @in smoothing = 8
-    @in left_extrapolation = "LOGNORMAL"
-    @in right_extrapolation = "LINEAR"
+    @in smoothing = initial_values.smoothing
+    @in left_extrapolation = initial_values.rexl
+    @in right_extrapolation = initial_values.rexu
     @in extrapolations = [
         "LOGNORMAL",
         "LINEAR",
@@ -125,11 +135,17 @@ layout3 = stock_layout(initial_values.act_symbol)
         )
         vol_date = vol_dates_df.date[begin]
         #
+        model_param = model_parameter(
+            smoothing,
+            left_extrapolation,
+            right_extrapolation,
+        )
+        #
         (traces1, traces2) = smile_traces(
             OptionSmile.conn,
             act_symbol,
             vol_date,
-            OptionSmile.p2,
+            model_param,
         )
         layout1 = implied_vol_layout(
             act_symbol,
@@ -142,6 +158,7 @@ layout3 = stock_layout(initial_values.act_symbol)
         layout2 = vol_parameter_layout(
             act_symbol,
             vol_date,
+            model_param,
             x_min_text,
             x_max_text,
             y2_min_text,
@@ -169,11 +186,17 @@ layout3 = stock_layout(initial_values.act_symbol)
     #
     @onbutton btn_plot_vols begin
         #
+        model_param = model_parameter(
+            smoothing,
+            left_extrapolation,
+            right_extrapolation,
+        )
+        #
         (traces1, traces2) = smile_traces(
             OptionSmile.conn,
             act_symbol,
             vol_date,
-            OptionSmile.p2,
+            model_param,
         )
         layout1 = implied_vol_layout(
             act_symbol,
@@ -186,6 +209,7 @@ layout3 = stock_layout(initial_values.act_symbol)
         layout2 = vol_parameter_layout(
             act_symbol,
             vol_date,
+            model_param,
             x_min_text,
             x_max_text,
             y2_min_text,
