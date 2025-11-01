@@ -132,6 +132,50 @@ layout3 = stock_layout(initial_values.act_symbol)
         #
         msg = "$act_symbol, $(string(start_date)), $(string(end_date)), $(string(vol_date))"
     end
+    #
+    @onbutton btn_plot_vols begin
+        #
+        (traces1, traces2) = smile_traces(
+            OptionSmile.conn,
+            act_symbol,
+            vol_date,
+            OptionSmile.p2,
+        )
+        layout1 = implied_vol_layout(
+            act_symbol,
+            vol_date,
+        )
+        layout2 = vol_parameter_layout(
+            act_symbol,
+            vol_date,
+        )
+        # update model
+        p1_traces = traces1
+        p2_traces = traces2
+        p1_layout = layout1
+        p2_layout = layout2
+        #
+        msg = "$act_symbol, $(string(start_date)), $(string(end_date)), $(string(vol_date))"
+    end
+    #
+    @onbutton btn_x_min_reset begin
+        x_min_text = ""
+    end
+    @onbutton btn_x_max_reset begin
+        x_max_text = ""
+    end
+    @onbutton btn_y1_min_reset begin
+        y1_min_text = ""
+    end
+    @onbutton btn_y1_max_reset begin
+        y1_max_text = ""
+    end
+    @onbutton btn_y2_min_reset begin
+        y2_min_text = ""
+    end
+    @onbutton btn_y2_max_reset begin
+        y2_max_text = ""
+    end
 end
 
 # UI components
