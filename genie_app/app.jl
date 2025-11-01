@@ -17,29 +17,44 @@ include("src/plots.jl")
 # initialise input variables
 
 initial_values = (
-    act_symbol     = "AAPL",
+    act_symbol = "AAPL",
     start_date = Date("2022-04-01"),
     end_date   = Date("2022-07-01"),
-    vol_date   = Date("2022-04-01"),
+
 )
 
-# volatilities
+# initial volatilities
+
+vol_dates_df = OptionSmile.volatility_dates(
+    OptionSmile.conn,
+    initial_values.act_symbol,
+    initial_values.start_date,
+    initial_values.end_date
+)
 
 (traces1, traces2) = smile_traces(
     OptionSmile.conn,
     initial_values.act_symbol,
-    initial_values.vol_date,
+    vol_dates_df.date[begin],
     OptionSmile.p2,
 )
 
 layout1 = implied_vol_layout(
     initial_values.act_symbol,
     initial_values.start_date,
+    "", # x_min_text
+    "", # x_max_text
+    "", # y_min_text
+    "", # y_max_text
 )
 
 layout2 = vol_parameter_layout(
     initial_values.act_symbol,
     initial_values.start_date,
+    "", # x_min_text
+    "", # x_max_text
+    "", # y_min_text
+    "", # y_max_text
 )
 
 # stock prices
@@ -59,9 +74,11 @@ layout3 = stock_layout(initial_values.act_symbol)
     @in act_symbol = initial_values.act_symbol
     @in start_date = initial_values.start_date
     @in end_date = initial_values.end_date
-    @in vol_date = initial_values.vol_date
+    @in vol_date = vol_dates_df.date[begin]
     @in btn_update_range = false
     @in btn_plot_vols = false
+    #
+    @out volatility_dates = vol_dates_df.date
     #
     @out p1_traces = traces1
     @out p1_layout = layout1
@@ -100,6 +117,14 @@ layout3 = stock_layout(initial_values.act_symbol)
     #
     @onbutton btn_update_range begin
         #
+        vol_dates_df = OptionSmile.volatility_dates(
+            OptionSmile.conn,
+            act_symbol,
+            start_date,
+            end_date,
+        )
+        vol_date = vol_dates_df.date[begin]
+        #
         (traces1, traces2) = smile_traces(
             OptionSmile.conn,
             act_symbol,
@@ -109,10 +134,18 @@ layout3 = stock_layout(initial_values.act_symbol)
         layout1 = implied_vol_layout(
             act_symbol,
             vol_date,
+            x_min_text,
+            x_max_text,
+            y1_min_text,
+            y1_max_text,
         )
         layout2 = vol_parameter_layout(
             act_symbol,
             vol_date,
+            x_min_text,
+            x_max_text,
+            y2_min_text,
+            y2_max_text,
         )
         # #
         traces3 = stock_traces(
@@ -123,6 +156,7 @@ layout3 = stock_layout(initial_values.act_symbol)
         )
         layout3 = stock_layout(act_symbol)
         # update model
+        volatility_dates = vol_dates_df.date
         p1_traces = traces1
         p2_traces = traces2
         p3_traces = traces3
@@ -144,10 +178,18 @@ layout3 = stock_layout(initial_values.act_symbol)
         layout1 = implied_vol_layout(
             act_symbol,
             vol_date,
+            x_min_text,
+            x_max_text,
+            y1_min_text,
+            y1_max_text,
         )
         layout2 = vol_parameter_layout(
             act_symbol,
             vol_date,
+            x_min_text,
+            x_max_text,
+            y2_min_text,
+            y2_max_text,
         )
         # update model
         p1_traces = traces1
@@ -204,7 +246,10 @@ function ui()
             ),
             separator(vertical = true),
             datefield("Volatility date", :vol_date,
-                datepicker_props = Dict(:todaybtn => false, :nounset => true),
+                datepicker_props = Dict(
+                    :todaybtn => false,
+                    :nounset => true,
+                ),
                 textfield_props = Dict(:bgcolor => "green-1"),
             ),
             separator(vertical = true),
@@ -261,22 +306,22 @@ function ui()
                 ]),
                 separator(),
                 row([
-                    textfield("y1_min", :y1_min_text, type = "number"),
+                    textfield("y_min (left)", :y1_min_text, type = "number"),
                     btn("Reset", @click(:btn_y1_min_reset)),
                 ]),
                 separator(),
                 row([
-                    textfield("y1_max", :y1_max_text, type = "number"),
+                    textfield("y_max (left)", :y1_max_text, type = "number"),
                     btn("Reset", @click(:btn_y1_max_reset)),
                 ]),
                 separator(),
                 row([
-                    textfield("y2_min", :y2_min_text, type = "number"),
+                    textfield("y_min (right)", :y2_min_text, type = "number"),
                     btn("Reset", @click(:btn_y2_min_reset)),
                 ]),
                 separator(),
                 row([
-                    textfield("y2_max", :y2_max_text, type = "number"),
+                    textfield("y_max (right)", :y2_max_text, type = "number"),
                     btn("Reset", @click(:btn_y2_max_reset)),
                 ]),
             ]),

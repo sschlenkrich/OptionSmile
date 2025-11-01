@@ -192,21 +192,33 @@ function smile_traces(
     return (implied_vol_traces, vol_params_traces)
 end
 
+function _lim(s::String)
+    if s == ""
+        return nothing
+    end
+    return parse(Float64, s)
+end
 
 function implied_vol_layout(
     act_symbol,
     date,
+    x_min_text,
+    x_max_text,
+    y_min_text,
+    y_max_text,
     )
     #
     PlotlyBase.Layout(
         title="Implied volatility $act_symbol, $(string(date))",
         xaxis=PlotlyBase.attr(
             title="strike",
-            showgrid=true
+            showgrid=true,
+            range = (_lim(x_min_text), _lim(x_max_text)),
         ),
         yaxis=PlotlyBase.attr(
             title="volatility (%)",
             showgrid=true,
+            range = (_lim(y_min_text), _lim(y_max_text)),
         )
     )
 end
@@ -215,17 +227,23 @@ end
 function vol_parameter_layout(
     act_symbol,
     date,
+    x_min_text,
+    x_max_text,
+    y_min_text,
+    y_max_text,
     )
     #
     PlotlyBase.Layout(
         title="Volatility model parameters",
         xaxis=PlotlyBase.attr(
             title="strike",
-            showgrid=true
+            showgrid=true,
+            range = (_lim(x_min_text), _lim(x_max_text)),
         ),
         yaxis=PlotlyBase.attr(
             title="abs volatility (price)",
             showgrid=true,
+            range = (_lim(y_min_text), _lim(y_max_text)),
         )
     )
 end
