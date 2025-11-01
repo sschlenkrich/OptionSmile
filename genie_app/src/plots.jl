@@ -5,33 +5,50 @@ using Printf
 import PiecewiseVanillaModel
 pvm = PiecewiseVanillaModel
 
-function stock_trace(
+function stock_traces(
     conn,
-    symbol,
+    act_symbol,
     start_date,
     end_date,
     )
     #
     q = "select * from ohlcv "
-    q = q * "where act_symbol = '$symbol' "
+    q = q * "where act_symbol = '$act_symbol' "
     q = q * "and date >= '$(string(start_date))' "
     q = q * "and date <= '$(string(end_date))' "
     q = q * "order by date;"
     df = OptionSmile.query(conn, q)
     #
     trace = PlotlyBase.ohlc(df, x=:date, open=:open, high=:high, low=:low, close=:close)
-    return trace
+    return [ trace ]
+end
+
+function stock_layout(
+    act_symbol,
+    )
+    #
+    PlotlyBase.Layout(
+        title="Stock price " * act_symbol,
+        xaxis=PlotlyBase.attr(
+            title="date",
+            showgrid=true
+        ),
+        yaxis=PlotlyBase.attr(
+            title="price",
+            showgrid=true,
+        )
+    )
 end
 
 
 function smile_traces(
     conn,
-    symbol,
+    act_symbol,
     date,
     param,
     )
     #
-    df = OptionSmile.smile_data(conn, symbol, date)
+    df = OptionSmile.smile_data(conn, act_symbol, date)
     #
     marker_size = 6
     marker_symbols = [ :circle, :rect, :diamond ]
@@ -173,4 +190,42 @@ function smile_traces(
         push!(vol_params_traces, trace_v)
     end
     return (implied_vol_traces, vol_params_traces)
+end
+
+
+function implied_vol_layout(
+    act_symbol,
+    date,
+    )
+    #
+    PlotlyBase.Layout(
+        title="Implied volatility $act_symbol, $(string(date))",
+        xaxis=PlotlyBase.attr(
+            title="strike",
+            showgrid=true
+        ),
+        yaxis=PlotlyBase.attr(
+            title="volatility (%)",
+            showgrid=true,
+        )
+    )
+end
+
+
+function vol_parameter_layout(
+    act_symbol,
+    date,
+    )
+    #
+    PlotlyBase.Layout(
+        title="Volatility model parameters",
+        xaxis=PlotlyBase.attr(
+            title="strike",
+            showgrid=true
+        ),
+        yaxis=PlotlyBase.attr(
+            title="abs volatility (price)",
+            showgrid=true,
+        )
+    )
 end

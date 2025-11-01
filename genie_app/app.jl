@@ -17,72 +17,53 @@ include("src/plots.jl")
 # initialise input variables
 
 initial_values = (
-    symbol     = "AAPL",
+    act_symbol     = "AAPL",
     start_date = Date("2022-04-01"),
     end_date   = Date("2022-07-01"),
     vol_date   = Date("2022-04-01"),
 )
 
-trace1 = stock_trace(
-    OptionSmile.conn_stocks,
-    initial_values.symbol,
-    initial_values.start_date,
-    initial_values.end_date
-)
+# volatilities
 
-layout1 = PlotlyBase.Layout(
-    title="Stock price " * initial_values.symbol,
-    xaxis=PlotlyBase.attr(
-        title="date",
-        showgrid=true
-    ),
-    yaxis=PlotlyBase.attr(
-        title="price",
-        showgrid=true,
-    )
-)
-
-(traces2, traces3) = smile_traces(
+(traces1, traces2) = smile_traces(
     OptionSmile.conn,
-    initial_values.symbol,
+    initial_values.act_symbol,
     initial_values.vol_date,
     OptionSmile.p2,
 )
 
-layout2 = PlotlyBase.Layout(
-    title="Implied volatility $(initial_values.symbol), $(string(initial_values.start_date))",
-    xaxis=PlotlyBase.attr(
-        title="strike",
-        showgrid=true
-    ),
-    yaxis=PlotlyBase.attr(
-        title="volatility (%)",
-        showgrid=true,
-    )
+layout1 = implied_vol_layout(
+    initial_values.act_symbol,
+    initial_values.start_date,
 )
 
-layout3 = PlotlyBase.Layout(
-    title="Volatility model parameters",
-    xaxis=PlotlyBase.attr(
-        title="strike",
-        showgrid=true
-    ),
-    yaxis=PlotlyBase.attr(
-        title="abs volatility (price)",
-        showgrid=true,
-    )
+layout2 = vol_parameter_layout(
+    initial_values.act_symbol,
+    initial_values.start_date,
 )
+
+# stock prices
+
+traces3 = stock_traces(
+    OptionSmile.conn_stocks,
+    initial_values.act_symbol,
+    initial_values.start_date,
+    initial_values.end_date
+)
+
+layout3 = stock_layout(initial_values.act_symbol)
+
 
 # reactive code
 @app begin
-    @in symbol = initial_values.symbol
+    @in act_symbol = initial_values.act_symbol
     @in start_date = initial_values.start_date
     @in end_date = initial_values.end_date
     @in vol_date = initial_values.vol_date
-    @in button_process = false
+    @in btn_update_range = false
+    @in btn_plot_vols = false
     #
-    @out msg = ""
-    @out p1_traces = [trace1, ]
+    @out p1_traces = traces1
     @out p1_layout = layout1
     #
     @out p2_traces = traces2
@@ -90,89 +71,178 @@ layout3 = PlotlyBase.Layout(
     #
     @out p3_traces = traces3
     @out p3_layout = layout3
+
     #
-    @onbutton button_process begin
-        msg = "$symbol, $(string(start_date)), $(string(end_date)), $(string(vol_date))"
+    @in smoothing = 8
+    @in left_extrapolation = "LOGNORMAL"
+    @in right_extrapolation = "LINEAR"
+    @in extrapolations = [
+        "LOGNORMAL",
+        "LINEAR",
+        "FLAT",
+    ]
+    #
+    @in x_min_text = ""
+    @in x_max_text = ""
+    @in y1_min_text = ""
+    @in y1_max_text = ""
+    @in y2_min_text = ""
+    @in y2_max_text = ""
+    #
+    @in btn_x_min_reset = false
+    @in btn_x_max_reset = false
+    @in btn_y1_min_reset = false
+    @in btn_y1_max_reset = false
+    @in btn_y2_min_reset = false
+    @in btn_y2_max_reset = false
+    #
+    @out msg = ""
+    #
+    @onbutton btn_update_range begin
         #
-        p1_traces = [stock_trace(
-            OptionSmile.conn_stocks,
-            symbol,
-            start_date,
-            end_date,
-        ), ]
-        p1_layout = PlotlyBase.Layout(
-            title="Stock price " * symbol,
-            xaxis=PlotlyBase.attr(
-                title="date",
-                showgrid=true
-            ),
-            yaxis=PlotlyBase.attr(
-                title="price",
-                showgrid=true,
-            )
-        )
-        #
-        (traces2, traces3) = smile_traces(
+        (traces1, traces2) = smile_traces(
             OptionSmile.conn,
-            symbol,
+            act_symbol,
             vol_date,
             OptionSmile.p2,
         )
+        layout1 = implied_vol_layout(
+            act_symbol,
+            vol_date,
+        )
+        layout2 = vol_parameter_layout(
+            act_symbol,
+            vol_date,
+        )
+        # #
+        traces3 = stock_traces(
+            OptionSmile.conn_stocks,
+            act_symbol,
+            start_date,
+            end_date,
+        )
+        layout3 = stock_layout(act_symbol)
+        # update model
+        p1_traces = traces1
         p2_traces = traces2
         p3_traces = traces3
+        p1_layout = layout1
+        p2_layout = layout2
+        p3_layout = layout3
         #
-        p2_layout = PlotlyBase.Layout(
-            title="Implied volatility $(symbol), $(string(vol_date))",
-            xaxis=PlotlyBase.attr(
-                title="strike",
-                showgrid=true,
-            ),
-            yaxis=PlotlyBase.attr(
-                title="volatility (%)",
-                showgrid=true,
-            )
-        )
+        msg = "$act_symbol, $(string(start_date)), $(string(end_date)), $(string(vol_date))"
     end
 end
 
 # UI components
 function ui()
     [
-        h1("Option Smile Modelling")
+        h1("Option Smile Modelling"),
         row([
-            textfield("Symbol", :symbol ),
+            textfield("Symbol", :act_symbol,
+                bgcolor = "green-1",
+            ),
+            separator(vertical = true),
             datefield("Start date", :start_date,
                 datepicker_props = Dict(:todaybtn => false, :nounset => true),
                 textfield_props = Dict(:bgcolor => "green-1"),
             ),
+            separator(vertical = true),
             datefield("End date", :end_date,
                 datepicker_props = Dict(:todaybtn => false, :nounset => true),
                 textfield_props = Dict(:bgcolor => "green-1"),
             ),
-            btn("Process",
-                @click(:button_process),
+            separator(vertical = true),
+            btn("Update range",
+                @click(:btn_update_range),
                 color = "primary",
                 class = "q-mr-sm",
             ),
+            separator(vertical = true),
             datefield("Volatility date", :vol_date,
                 datepicker_props = Dict(:todaybtn => false, :nounset => true),
                 textfield_props = Dict(:bgcolor => "green-1"),
             ),
-        ])
+            separator(vertical = true),
+            btn("Update volatility",
+                @click(:btn_plot_vols),
+                color = "primary",
+                class = "q-mr-sm",
+            ),
+        ]),
         row([
+            cell([
+                plot(:p1_traces, layout=:p1_layout)
+            ]),
             cell([
                 plot(:p2_traces, layout=:p2_layout)
             ]),
-            cell([
-                plot(:p3_traces, layout=:p3_layout)
-            ])
-        ])
+            column([
+                b("Smoothing"),
+                slider(1:1:10, :smoothing,
+                    label = true,
+                    markers = true,
+                ),
+                separator(),
+                select(:left_extrapolation,
+                    options = :extrapolations,
+                    label = "Left extrapolation",
+                    useinput = false,
+                    multiple = false,
+                    clearable = false,
+                    filled = true,
+                    counter = false,
+                    usechips = false,
+                ),
+                separator(),
+                select(:right_extrapolation,
+                    options = :extrapolations,
+                    label = "Right extrapolation",
+                    useinput = false,
+                    multiple = false,
+                    clearable = false,
+                    filled = true,
+                    counter = false,
+                    usechips = false,
+                ),
+                separator(),
+                row([
+                    textfield("x_min", :x_min_text, type = "number"),
+                    btn("Reset", @click(:btn_x_min_reset)),
+                ]),
+                separator(),
+                row([
+                    textfield("x_max", :x_max_text, type = "number"),
+                    btn("Reset", @click(:btn_x_max_reset)),
+                ]),
+                separator(),
+                row([
+                    textfield("y1_min", :y1_min_text, type = "number"),
+                    btn("Reset", @click(:btn_y1_min_reset)),
+                ]),
+                separator(),
+                row([
+                    textfield("y1_max", :y1_max_text, type = "number"),
+                    btn("Reset", @click(:btn_y1_max_reset)),
+                ]),
+                separator(),
+                row([
+                    textfield("y2_min", :y2_min_text, type = "number"),
+                    btn("Reset", @click(:btn_y2_min_reset)),
+                ]),
+                separator(),
+                row([
+                    textfield("y2_max", :y2_max_text, type = "number"),
+                    btn("Reset", @click(:btn_y2_max_reset)),
+                ]),
+            ]),
+        ]),
+        cell([
+            plot(:p3_traces, layout=:p3_layout)
+        ]),
         cell([
             textfield("Debug", :msg )
-        ])
-        cell([
-            plot(:p1_traces, layout=:p1_layout)
-        ])
+        ]),
     ]
 end
 
