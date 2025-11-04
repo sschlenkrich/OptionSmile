@@ -53,3 +53,9 @@ function volatility_dates(conn, symbol, start_date, end_date)
     q = q * "order by date;"
     return query(conn, q, false)
 end
+
+function sp500()
+    file_name = "../data/SP500.csv"
+    df = CSV.read(file_name, DataFrame)
+    return df
+end
