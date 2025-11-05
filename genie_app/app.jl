@@ -101,6 +101,7 @@ const layout2 = vol_parameter_layout(
 
 const home_markdown = read(open("markdown/home.md", "r"), String)
 const docs_markdown = read(open("markdown/docs.md", "r"), String)
+const commit_hash = read(open("commit.txt", "r"), String)
 
 # reactive code
 @app begin
@@ -154,7 +155,7 @@ const docs_markdown = read(open("markdown/docs.md", "r"), String)
     @in btn_y2_min_reset = false
     @in btn_y2_max_reset = false
     #
-    @out msg = "Started."
+    @out msg = "Started version $commit_hash."
     #
     @onbutton btn_go_to_analytics begin
         tab_selected = "analytics"
@@ -599,6 +600,7 @@ meta = Dict(
     "og:title" => "Option Smile Modelling",
     "og:description" => "Interpolate implied volatilities for US stock options.",
     "og:image" => "/preview.jpg",
+    "og:url" => "https://optionsmile.jsonrisk.de/"
 )
 layout = DEFAULT_LAYOUT(
     meta = meta,
