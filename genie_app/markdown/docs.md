@@ -15,11 +15,11 @@ The **Stock price plot** displays open/high/low/close prices of the stock for th
 
 ### Usage
 
-Select a stock via the **Symbol** dropdown list. The app covers most of the S&P 500 index.
+Select a stock via the **Symbol** dropdown list. The app covers most of the S&P 500 index constituents.
 
 Select a start date for the simulation time series via the **Start date** field. The app contains data since 2020.
 
-Select an end date for the simulation time series via the **End date** field. The period between start date and end date should not be larger then about three months to limit memory and calculation resources.
+Select an end date for the simulation time series via the **End date** field. The period between start date and end date should not be larger than about three months to limit memory and calculation resources.
 
 Use the **Update range** button to calculate and display the stock price data (lower plot) for the selected symbol, start date and end date. This function also calculates the dates for volatility simulation.
 
