@@ -108,6 +108,9 @@ const commit_hash = read(open("commit.txt", "r"), String)
     @in tab_selected = "home"
     @in btn_go_to_analytics = false
     #
+    @private conn_vols = OptionSmile.connection("volatilities")
+    @private conn_stks = OptionSmile.connection("stocks")
+    #
     @in act_symbol = initial_values.act_symbol
     @in start_date = initial_values.start_date
     @in end_date = initial_values.end_date
@@ -118,8 +121,8 @@ const commit_hash = read(open("commit.txt", "r"), String)
     @in btn_simulate_stop = false
     #
     @in btn_simulate_stop_disabled = false
-    @in is_simulating = false
-    @in stop_simulating = false
+    @out is_simulating = false
+    @out stop_simulating = false
     #
     @out volatility_dates = vol_dates_df.date
     @out volatility_dates_fmt = as_text(vol_dates_df.date)
@@ -139,7 +142,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
     @in smoothing = initial_values.smoothing
     @in left_extrapolation = initial_values.rexl
     @in right_extrapolation = initial_values.rexu
-    @in extrapolations = initial_values.extrapolations
+    @out extrapolations = initial_values.extrapolations
     #
     @in x_min_text = p_ranges.x_min_text
     @in x_max_text = p_ranges.x_max_text
@@ -178,7 +181,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
         local status = ""
         try
             vol_dates_df = OptionSmile.volatility_dates(
-                OptionSmile.conn,
+                conn_vols,
                 short(act_symbol),
                 start_date,
                 end_date,
@@ -186,7 +189,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
             vol_date = vol_dates_df.date[begin]
             #
             trace_tuple = stock_traces(
-                OptionSmile.conn_stocks,
+                conn_stks,
                 short(act_symbol),
                 start_date,
                 end_date,
@@ -210,7 +213,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
             )
             #
             (traces1, traces2) = smile_traces(
-                OptionSmile.conn,
+                conn_vols,
                 short(act_symbol),
                 vol_date,
                 model_param,
@@ -265,7 +268,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
             )
             #
             (traces1, traces2) = smile_traces(
-                OptionSmile.conn,
+                conn_vols,
                 short(act_symbol),
                 vol_date,
                 model_param,
@@ -318,7 +321,7 @@ const commit_hash = read(open("commit.txt", "r"), String)
                 local status = ""
                 try
                     t1 = Threads.@spawn smile_traces(
-                        OptionSmile.conn,
+                        conn_vols,
                         short(act_symbol),
                         date,
                         model_param,
@@ -342,11 +345,15 @@ const commit_hash = read(open("commit.txt", "r"), String)
                     )
                     t4 = Threads.@spawn obs_date_trace(date, min_stock_price, max_stock_price)
                     sleep(1.0)
+                    if stop_simulating
+                        break
+                    end
                     (traces1, traces2) = fetch(t1)
                     layout1 = fetch(t2)
                     layout2 = fetch(t3)
                     trace3 = fetch(t4)
                     # update model
+                    vol_date = date  # make sure datefield updates as well
                     p1_traces = traces1
                     p2_traces = traces2
                     p1_layout = layout1
