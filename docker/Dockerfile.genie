@@ -1,0 +1,43 @@
+FROM julia:latest
+
+RUN apt-get -y update
+RUN apt-get -y install \
+   bash \
+   curl \
+   git \
+   sudo \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN bash -c 'curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh | sudo bash'
+
+RUN git clone https://github.com/sschlenkrich/OptionSmile
+
+# see https://learn.genieframework.com/framework/guides/deployments/deploying-genie-apps
+
+WORKDIR /OptionSmile/genie_app
+# RUN chown -R genie:genie /home/
+# USER genie
+EXPOSE 8000
+EXPOSE 80
+# ENV JULIA_DEPOT_PATH "/home/genie/.julia"
+ENV JULIA_REVISE = "off"
+ENV GENIE_ENV "prod"
+ENV GENIE_HOST "0.0.0.0"
+ENV PORT "8000"
+ENV WSPORT "8000"
+ENV EARLYBIND "true"
+ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"
+
+RUN julia -e "using Pkg; Pkg.activate(\".\"); Pkg.add(url = \"https://github.com/sschlenkrich/PiecewiseVanillaModel.jl\")"
+
+RUN julia -e "using Pkg; Pkg.activate(\".\"); Pkg.instantiate(); Pkg.precompile(); "
+
+# trigger re-build of subsequent layers
+RUN date > /date.txt
+
+COPY ./run_script_genie.sh /usr/local/bin/
+
+ENTRYPOINT [ "/bin/sh", "-c" ]
+
+CMD ["run_script_genie.sh"]
